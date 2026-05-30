@@ -23,35 +23,35 @@
 
   <div class="tb-sep"></div>
 
-  <button class="btn btn-accent" id="btn-new-page" title="清除畫布，開始新頁面">
+  <button class="btn btn-accent" id="btn-new-page" title="清除畫布，開始新頁面" aria-label="New Page">
     <span>＋</span> New Page
   </button>
 
   <div class="tb-sep"></div>
 
   <!-- Check Path -->
-  <button class="btn btn-path" id="btn-check-path" title="高亮顯示所選元素的所有父層 (Check Path)">
+  <button class="btn btn-path" id="btn-check-path" title="高亮顯示所選元素的所有父層 (Check Path)" aria-label="Check Path">
     ⬆ Check Path
   </button>
 
   <!-- Check Child -->
-  <button class="btn btn-child" id="btn-check-child" title="高亮顯示所選元素的所有子元素 (Check Child)">
+  <button class="btn btn-child" id="btn-check-child" title="高亮顯示所選元素的所有子元素 (Check Child)" aria-label="Check Child">
     ⬇ Check Child
   </button>
   <span class="tb-label">Max Lv</span>
   <input id="max-level-input" type="number" value="3" min="1" max="20" title="Check Child 最大層數" />
 
-  <button class="btn" id="btn-clear-highlight" title="清除所有高亮">✕ Clear</button>
+  <button class="btn" id="btn-clear-highlight" title="清除所有高亮" aria-label="Clear highlights">✕ Clear</button>
 
   <div class="spacer"></div>
 
   <!-- Export -->
   <span class="tb-label">Export →</span>
-  <button class="btn btn-export" id="btn-export-html" title="下載 index.html">⬇ HTML</button>
-  <button class="btn btn-export" id="btn-export-css"  title="下載 css/style.css">⬇ CSS</button>
-  <button class="btn btn-export" id="btn-export-js"   title="下載 js/main.js">⬇ JS</button>
+  <button class="btn btn-export" id="btn-export-html" title="下載 index.html" aria-label="Export HTML">⬇ HTML</button>
+  <button class="btn btn-export" id="btn-export-css"  title="下載 css/style.css" aria-label="Export CSS">⬇ CSS</button>
+  <button class="btn btn-export" id="btn-export-js"   title="下載 js/main.js" aria-label="Export JS">⬇ JS</button>
   <div class="tb-sep"></div>
-  <button class="btn btn-accent" id="btn-export-zip" title="下載 ZIP（包含 index.html、css/、js/）">📦 ZIP</button>
+  <button class="btn btn-accent" id="btn-export-zip" title="下載 ZIP（包含 index.html、css/、js/）" aria-label="Export ZIP">📦 ZIP</button>
 </div>
 
 <!-- ════════════════ MAIN LAYOUT ════════════════ -->
@@ -74,7 +74,7 @@
 
     <!-- Layers pane -->
     <div class="panel-pane" id="pane-layers">
-      <div id="layers-container"><p class="layer-empty">No elements yet.<br/>Add from Elements tab.</p></div>
+      <div id="layers-container" role="tree" aria-label="Element layers"><p class="layer-empty">No elements yet.<br/>Add from Elements tab.</p></div>
     </div>
   </div>
 
@@ -438,8 +438,7 @@
 <!-- Toast container -->
 <div id="toast-container"></div>
 
-<!-- Modal -->
-<div id="modal-overlay">
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div id="modal-box">
     <h3 id="modal-title">Confirm</h3>
     <p id="modal-body" style="font-size:12px;color:var(--text-sec)"></p>

@@ -4,6 +4,7 @@
 
 /* ── Table-family tags — rendered as divs with flex layout on canvas ── */
 const TABLE_TAGS = ['table','thead','tbody','tfoot','tr','th','td','caption','colgroup','col'];
+const VOID_TAGS = ['img','input','br','hr','progress','meter','col'];
 
 /* ── Child element reorder by dragging handle ── */
 function startChildReorder(desc, wrapEl, startEvent) {
@@ -224,26 +225,28 @@ function renderElToCanvas(desc, parentDom) {
     document.addEventListener('mouseup', onUp);
   });
 
-  // Drop target for palette drag
-  wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.classList.add('drop-target'); });
-  wrap.addEventListener('dragleave', () => wrap.classList.remove('drop-target'));
-  wrap.addEventListener('drop', e => {
-    e.preventDefault(); e.stopPropagation();
-    wrap.classList.remove('drop-target');
-    const data = e.dataTransfer.getData('text/plain');
-    if (!data) return;
-    try {
-      const item = JSON.parse(data);
-      const newDesc = createElDescriptor(item, 0, 0, desc.uid);
-      App.elements.push(newDesc);
-      pushHistory();
-      saveToStorage();
-      refreshCanvas();
-      refreshLayers();
-      selectElement(newDesc.uid);
-      toast('Added <' + item.tag + '> inside <' + desc.tag + '>', 'success');
-    } catch(ex) { console.error('Drop error:', ex); }
-  });
+  // Drop target for palette drag (skip void elements — they can't have children)
+  if (!VOID_TAGS.includes(desc.tag)) {
+    wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.classList.add('drop-target'); });
+    wrap.addEventListener('dragleave', () => wrap.classList.remove('drop-target'));
+    wrap.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      wrap.classList.remove('drop-target');
+      const data = e.dataTransfer.getData('text/plain');
+      if (!data) return;
+      try {
+        const item = JSON.parse(data);
+        const newDesc = createElDescriptor(item, 0, 0, desc.uid);
+        App.elements.push(newDesc);
+        pushHistory();
+        saveToStorage();
+        refreshCanvas();
+        refreshLayers();
+        selectElement(newDesc.uid);
+        toast('Added <' + item.tag + '> inside <' + desc.tag + '>', 'success');
+      } catch(ex) { console.error('Drop error:', ex); }
+    });
+  }
 }
 
 
@@ -357,6 +360,7 @@ function applyDescStyles(el, d) {
   // advanced
   if (d.overflow) s.overflow = d.overflow;
   if (d.opacity !== '' && d.opacity !== undefined) s.opacity = d.opacity;
+  if (d.zIndex !== '' && d.zIndex !== undefined) s.zIndex = d.zIndex;
   if (d.cursor) s.cursor = d.cursor;
   if (d.position) s.position = d.position;
 
@@ -377,6 +381,18 @@ function applyTableTextStyles(el, d) {
   s.boxSizing = 'border-box';
 }
 
+/* ── Auto-expand canvas to fit all elements ── */
+function autoExpandCanvas() {
+  const canvas = document.getElementById('canvas');
+  let maxX = 1600, maxY = 1200;
+  App.elements.filter(e => !e.parentUid).forEach(e => {
+    maxX = Math.max(maxX, (e.x || 0) + (e.w || 0) + 200);
+    maxY = Math.max(maxY, (e.y || 0) + (e.h || 0) + 200);
+  });
+  canvas.style.width = maxX + 'px';
+  canvas.style.height = maxY + 'px';
+}
+
 /* ── Full canvas refresh ── */
 function refreshCanvas() {
   const canvas = document.getElementById('canvas');
@@ -390,6 +406,7 @@ function refreshCanvas() {
     if (w) w.classList.add('selected');
   }
   reapplyHighlights();
+  autoExpandCanvas();
 }
 
 /* ── Select element ── */
@@ -403,7 +420,11 @@ function selectElement(uid) {
 
   if (uid && uid !== '__body__') {
     const w = document.querySelector('[data-uid="' + uid + '"]');
-    if (w) w.classList.add('selected');
+    if (w) {
+      w.classList.add('selected');
+      // Scroll canvas to show the selected element
+      w.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
     const ln = document.querySelector('.layer-node[data-uid="' + uid + '"]');
     if (ln) ln.classList.add('selected');
   } else if (uid === '__body__') {

@@ -21,8 +21,7 @@ function buildHTMLTree(parentUid, indent, classMap) {
     if (['input', 'textarea'].includes(d.tag) && d.placeholder) attrs.push('placeholder="' + d.placeholder + '"');
     if (d.tag === 'iframe' && d.src) attrs.push('src="' + d.src + '"');
     if (d.tag === 'video' || d.tag === 'audio') attrs.push('controls');
-
-    // custom attributes
+    if (d.tag === 'canvas') { attrs.push('width="' + d.w + '"'); attrs.push('height="' + d.h + '"'); }
     if (d.customAttrs) {
       Object.entries(d.customAttrs).forEach(([k, v]) => {
         attrs.push(k + '="' + v + '"');
@@ -30,7 +29,7 @@ function buildHTMLTree(parentUid, indent, classMap) {
     }
 
     const attrStr = attrs.length ? ' ' + attrs.join(' ') : '';
-    const voidTags = ['img', 'input', 'br', 'hr'];
+    const voidTags = ['img', 'input', 'br', 'hr', 'col'];
 
     if (voidTags.includes(d.tag)) {
       html += sp + '<' + d.tag + attrStr + ' />\n';
@@ -102,7 +101,7 @@ function buildCSS(classMap) {
     // advanced
     if (d.overflow) rules.push('overflow: ' + d.overflow);
     if (d.opacity !== '' && d.opacity !== undefined) rules.push('opacity: ' + d.opacity);
-    if (d.zIndex) rules.push('z-index: ' + d.zIndex);
+    if (d.zIndex !== '' && d.zIndex !== undefined) rules.push('z-index: ' + d.zIndex);
     if (d.cursor) rules.push('cursor: ' + d.cursor);
     if (d.position) rules.push('position: ' + d.position);
 
@@ -127,7 +126,7 @@ function buildClassMap() {
 function generateFullHTML(classMap) {
   const bodyContent = buildHTMLTree(null, 2, classMap);
   return `<!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

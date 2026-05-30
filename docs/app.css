@@ -727,3 +727,25 @@ body {
 [data-table-tag="tfoot"] > .el-wrapper.is-child {
   width: 100% !important;
 }
+
+/* ══════════════════ RESPONSIVE / MOBILE ══════════════════ */
+#toolbar {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --left-w: 180px;
+    --right-w: 220px;
+  }
+}
+
+@media (max-width: 700px) {
+  #left-panel  { display: none; }
+  #right-panel { display: none; }
+  :root {
+    --left-w: 0px;
+    --right-w: 0px;
+  }
+}

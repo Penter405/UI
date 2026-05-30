@@ -293,7 +293,7 @@ function refreshProps() {
   el = document.getElementById('prop-cursor'); if(el) el.value = d.cursor || '';
   el = document.getElementById('prop-position'); if(el) el.value = d.position || '';
 
-  // custom attrs
+  // custom attrs (escaped to prevent XSS)
   var attrList = document.getElementById('custom-attrs-list');
   if (attrList) {
     attrList.innerHTML = '';
@@ -301,8 +301,8 @@ function refreshProps() {
       Object.entries(d.customAttrs).forEach(([k, v]) => {
         var row = document.createElement('div');
         row.className = 'prop-row custom-attr-row';
-        row.innerHTML = '<input class="prop-input ca-key" value="' + k + '" style="flex:1" />' +
-          '<input class="prop-input ca-val" value="' + (v||'') + '" style="flex:1" />' +
+        row.innerHTML = '<input class="prop-input ca-key" value="' + escapeAttr(k) + '" style="flex:1" />' +
+          '<input class="prop-input ca-val" value="' + escapeAttr(v||'') + '" style="flex:1" />' +
           '<button class="layer-act-btn ca-del" title="Remove">✕</button>';
         attrList.appendChild(row);
       });
@@ -330,11 +330,15 @@ function bindProps() {
   function onChange(id, fn) {
     const el = document.getElementById(id);
     if (!el) return;
+    let debounceTimer;
     el.addEventListener('input', () => {
       if (!App.selected || App.selected === '__body__') return;
       fn(findEl(App.selected), el.value);
-      pushHistory(); saveToStorage();
-      refreshCanvas(); refreshLayers();
+      refreshCanvas(); // live preview
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        pushHistory(); saveToStorage(); refreshLayers();
+      }, 500);
     });
   }
   function onSelect(id, fn) {
@@ -348,7 +352,24 @@ function bindProps() {
     });
   }
 
-  onChange('prop-tag', (d, v) => { d.tag = v; });
+  // Tag change — use 'change' event and validate nesting
+  onSelect('prop-tag', (d, v) => {
+    d.tag = v;
+    const parent = findEl(d.parentUid);
+    if (parent) {
+      const rules = {
+        'tr': ['table','thead','tbody','tfoot'],
+        'td': ['tr'], 'th': ['tr'],
+        'li': ['ul','ol'],
+        'option': ['select','optgroup'],
+        'thead': ['table'], 'tbody': ['table'], 'tfoot': ['table'],
+      };
+      if (rules[v] && !rules[v].includes(parent.tag)) {
+        toast('⚠️ <' + v + '> may not belong inside <' + parent.tag + '>', 'warn');
+      }
+    }
+    refreshLayers();
+  });
   onChange('prop-id', (d, v) => { d.elId = v; });
   onChange('prop-class', (d, v) => { d.elClass = v; });
   onChange('prop-text', (d, v) => { d.text = v; });
@@ -412,6 +433,7 @@ function bindProps() {
   function numBind(id, prop) {
     var el = document.getElementById(id);
     if (!el) return;
+    let debounceTimer;
     el.addEventListener('input', () => {
       if (!App.selected || App.selected === '__body__') return;
       const d = findEl(App.selected);
@@ -423,6 +445,10 @@ function bindProps() {
         if (prop === 'x') w.style.left = d.x + 'px';
         if (prop === 'y') w.style.top = d.y + 'px';
       }
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        pushHistory(); saveToStorage();
+      }, 400);
     });
   }
   numBind('prop-width', 'w');
@@ -562,10 +588,21 @@ function bindKeyboard() {
     // Don't intercept when typing in inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-    // Delete selected element
+    // Delete selected element (with confirmation)
     if (e.key === 'Delete' && App.selected && App.selected !== '__body__') {
       const d = findEl(App.selected);
-      if (d) { removeEl(d.uid); pushHistory(); saveToStorage(); refreshCanvas(); refreshLayers(); refreshProps(); toast('Deleted', 'warn'); }
+      if (d) {
+        const kids = descendants(d.uid, 999);
+        const msg = kids.length
+          ? 'This will also remove ' + kids.length + ' child element(s).'
+          : 'Remove this element?';
+        modalConfirm('Delete <' + d.tag + '>', msg).then(ok => {
+          if (!ok) return;
+          removeEl(d.uid); pushHistory(); saveToStorage();
+          refreshCanvas(); refreshLayers(); refreshProps();
+          toast('Deleted', 'warn');
+        });
+      }
     }
     // Ctrl+Z undo
     if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {

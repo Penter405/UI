@@ -143,7 +143,7 @@ function toast(msg, type) {
   setTimeout(() => { t.style.animation = 'toastOut .3s ease forwards'; setTimeout(() => t.remove(), 300); }, 2400);
 }
 
-/* ── Modal confirm ── */
+/* ── Modal confirm (supports Escape to cancel, Enter to confirm) ── */
 function modalConfirm(title, body) {
   return new Promise(resolve => {
     document.getElementById('modal-title').textContent = title;
@@ -151,15 +151,22 @@ function modalConfirm(title, body) {
     document.getElementById('modal-overlay').classList.add('open');
     const ok = document.getElementById('modal-ok');
     const cancel = document.getElementById('modal-cancel');
+    ok.focus();
     function cleanup() {
       document.getElementById('modal-overlay').classList.remove('open');
       ok.removeEventListener('click', onOk);
       cancel.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
     }
     function onOk() { cleanup(); resolve(true); }
     function onCancel() { cleanup(); resolve(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+      if (e.key === 'Enter')  { e.preventDefault(); onOk(); }
+    }
     ok.addEventListener('click', onOk);
     cancel.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
   });
 }
 
@@ -228,6 +235,11 @@ function downloadFile(filename, content, mime) {
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
 }
 
+/* ── HTML attribute escaping helper ── */
+function escapeAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 /* ── LocalStorage persistence ── */
 function saveToStorage() {
   try {
@@ -237,7 +249,10 @@ function saveToStorage() {
       body: App.body,
     };
     localStorage.setItem('ui-builder-state', JSON.stringify(data));
-  } catch (e) { /* quota exceeded — ignore */ }
+  } catch (e) {
+    console.warn('localStorage save failed:', e);
+    toast('⚠️ Auto-save failed — storage full. Export your work!', 'warn');
+  }
 }
 
 function loadFromStorage() {
